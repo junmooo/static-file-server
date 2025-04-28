@@ -10,9 +10,18 @@ function App() {
     fetchFiles();
   }, []);
 
+  // 获取当前IP或域名
+  const getIP = () => {
+    const url = window.location.href;
+
+    const arr = url.split('/');
+    console.log(1616, arr[2].split(':')[0]);
+    return arr[2].split(':')[0];
+  };
+
   // 获取文件列表
   const fetchFiles = async () => {
-    const response = await axios.get('http://localhost:3008/uploads');
+    const response = await axios.get(`http://${getIP()}:3008/uploads`);
     setFilesList(response.data);
   };
 
@@ -22,7 +31,7 @@ function App() {
     formData.append('file', selectedFile);
 
     try {
-      const response = await axios.post('http://localhost:3008/api/upload', formData, {
+      const response = await axios.post(`http://${getIP()}:3008/api/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       alert(response.data.message); // 弹框显示上传成功信息
@@ -35,7 +44,7 @@ function App() {
   // 删除文件
   const handleDelete = async (filename) => {
     try {
-      await axios.delete(`http://localhost:3008/api/delete/${filename}`);
+      await axios.delete(`http://${getIP()}:3008/api/delete/${filename}`);
       alert('File deleted successfully'); // 弹框显示删除成功信息
       fetchFiles(); // 刷新文件列表
     } catch (error) {
@@ -45,12 +54,12 @@ function App() {
 
   // 下载文件
   const handleDownload = (filename) => {
-    window.location.href = `http://localhost:3008/api/download/${filename}`;
+    window.location.href = `http://${getIP()}:3008/api/download/${filename}`;
   };
 
   // 预览文件
   const handlePreview = (filename) => {
-    window.open(`http://localhost:3008/api/preview/${filename}`, '_blank');
+    window.open(`http://${getIP()}:3008/api/preview/${filename}`, '_blank');
   };
 
   return (
