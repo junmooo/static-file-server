@@ -64,6 +64,22 @@ function App() {
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      {/* API 文档链接 */}
+      <div style={{ marginBottom: '20px' }}>
+        <a
+          href={`http://${getIP()}:3008/api-docs`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            textDecoration: 'none',
+            color: '#007bff',
+            fontWeight: 'bold',
+          }}
+        >
+          查看 API 文档
+        </a>
+      </div>
+  
       {/* 文件上传 */}
       <div
         style={{
@@ -103,9 +119,8 @@ function App() {
           上传文件
         </button>
       </div>
-
+  
       {/* 文件列表 */}
-
       <table
         style={{
           width: '100%',

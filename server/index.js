@@ -3,19 +3,18 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 
 const app = express();
 const port = 3008;
 
 // 确保 uploads 目录存在
 // const uploadDir = path.join(__dirname, 'uploads');
-// if (!fs.existsSync(uploadDir)) {
-//   fs.mkdirSync(uploadDir);
-// }
-
 const uploadDir = '/www/uploads';
+
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true }); // 使用 recursive 确保父目录也会被创建
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 // 格式化当前时间为 YYYY-MM-DD-HH:mm:ss
@@ -27,33 +26,88 @@ const formatDate = () => {
   )}${pad(now.getSeconds())}`;
 };
 const timestamp = formatDate();
-// 配置文件存储路径
 const upload = multer({ dest: uploadDir });
 
 // 允许跨域
 app.use(cors());
-app.use(express.static('public')); // 提供静态资源访问
+app.use(express.static('public'));
 
-// 上传文件接口
+// Swagger 配置
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Static File Server API',
+      version: '1.0.0',
+      description: 'API 文档 for Static File Server',
+    },
+    servers: [
+      {
+        url: `http://localhost:${port}`,
+      },
+    ],
+  },
+  apis: [__filename], // 当前文件中定义的注释会被解析为文档
+};
+
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+/**
+ * @swagger
+ * /api/upload:
+ *   post:
+ *     summary: 上传文件
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: 文件上传成功
+ *       500:
+ *         description: 文件上传失败
+ */
 app.post('/api/upload', upload.single('file'), (req, res) => {
   const filePath = req.file.path;
-  // 获取后缀名 并重命名文件名
   const extname = path.extname(req.file.originalname);
   const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
   const newName = `${path.basename(originalName, extname)}_${timestamp}${extname}`;
   const targetPath = path.join(uploadDir, newName);
 
-  // 将文件从临时路径移动到目标路径
   fs.rename(filePath, targetPath, (err) => {
     if (err) {
       console.error('Error moving file:', err);
       return res.status(500).send('File upload failed');
     }
-    res.send({ message: 'File uploaded successfully', file: newName });
+    res.send({ message: 'File uploaded successfully', file: newName, link: `/api/download/${newName}` });
   });
 });
 
-// 下载文件接口
+/**
+ * @swagger
+ * /api/download/{filename}:
+ *   get:
+ *     summary: 下载文件
+ *     parameters:
+ *       - in: path
+ *         name: filename
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 文件名
+ *     responses:
+ *       200:
+ *         description: 文件下载成功
+ *       404:
+ *         description: 文件未找到
+ */
 app.get('/api/download/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(uploadDir, filename);
@@ -70,7 +124,24 @@ app.get('/api/download/:filename', (req, res) => {
   }
 });
 
-// 预览文件接口
+/**
+ * @swagger
+ * /api/preview/{filename}:
+ *   get:
+ *     summary: 预览文件
+ *     parameters:
+ *       - in: path
+ *         name: filename
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 文件名
+ *     responses:
+ *       200:
+ *         description: 文件预览成功
+ *       404:
+ *         description: 文件未找到
+ */
 app.get('/api/preview/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(uploadDir, filename);
@@ -82,7 +153,24 @@ app.get('/api/preview/:filename', (req, res) => {
   }
 });
 
-// 删除文件接口
+/**
+ * @swagger
+ * /api/delete/{filename}:
+ *   delete:
+ *     summary: 删除文件
+ *     parameters:
+ *       - in: path
+ *         name: filename
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 文件名
+ *     responses:
+ *       200:
+ *         description: 文件删除成功
+ *       404:
+ *         description: 文件未找到
+ */
 app.delete('/api/delete/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(uploadDir, filename);
@@ -100,7 +188,17 @@ app.delete('/api/delete/:filename', (req, res) => {
   }
 });
 
-// 获取文件列表接口
+/**
+ * @swagger
+ * /uploads:
+ *   get:
+ *     summary: 获取文件列表
+ *     responses:
+ *       200:
+ *         description: 文件列表获取成功
+ *       500:
+ *         description: 读取目录失败
+ */
 app.get('/uploads', (req, res) => {
   fs.readdir(uploadDir, (err, files) => {
     if (err) {
@@ -110,7 +208,9 @@ app.get('/uploads', (req, res) => {
     res.send(files);
   });
 });
+
 // 启动服务
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
+  console.log(`API Docs available at http://localhost:${port}/api-docs`);
 });
