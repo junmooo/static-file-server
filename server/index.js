@@ -10,8 +10,8 @@ const app = express();
 const port = 3008;
 
 // 确保 uploads 目录存在
-// const uploadDir = path.join(__dirname, 'uploads');
-const uploadDir = '/www/uploads';
+const uploadDir = path.join(__dirname, 'uploads');
+// const uploadDir = '/www/uploads';
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -213,4 +213,13 @@ app.get('/uploads', (req, res) => {
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
   console.log(`API Docs available at http://localhost:${port}/api-docs`);
+});
+
+// 提供静态文件服务
+const buildPath = path.join(__dirname, '../ui/build');
+app.use(express.static(buildPath));
+
+// 捕获所有未匹配的路由，返回前端的 index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(buildPath, 'index.html'));
 });
