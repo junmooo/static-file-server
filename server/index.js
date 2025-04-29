@@ -13,9 +13,7 @@ const port = 3008;
 //   fs.mkdirSync(uploadDir);
 // }
 
-const uploadDir = '/www/uploads'; // 修改上传目录为 /www/uploads
-
-// 确保 /www/uploads 目录存在
+const uploadDir = '/www/uploads';
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true }); // 使用 recursive 确保父目录也会被创建
 }
